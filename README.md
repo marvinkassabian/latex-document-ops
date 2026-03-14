@@ -27,6 +27,8 @@ Inputs:
 - `strict_build`
 - `clean_command`
 - `enable_pages`
+- `page_title`
+- `page_description`
 - `artifact_retention_days`
 
 ### `.github/workflows/release.yml`
@@ -112,6 +114,7 @@ Behavior and requirements:
 
 - `.github/actions/validate-release-version`
 - `.github/actions/validate-conventional-commits`
+- `.github/actions/build-pages-site`
 - `.github/actions/download-release-pdfs`
 - `.github/actions/configure-rclone-mega`
 - `.github/actions/configure-rclone-proton`
@@ -121,6 +124,7 @@ Behavior and requirements:
 Action notes:
 
 - `validate-conventional-commits` checks push and pull request commit subjects, ignores merge commits, and emits GitHub error annotations for non-conforming subjects.
+- `build-pages-site` renders `site/index.html` from a shared template and copies built artifacts into the Pages output tree.
 - `configure-rclone-mega` validates that username/password are present, creates the `mega` remote via `rclone config create`, and verifies login before upload.
 - `upload-pdfs-mega` purges the release target path when present and performs a single filtered `rclone copy` for PDF artifacts.
 

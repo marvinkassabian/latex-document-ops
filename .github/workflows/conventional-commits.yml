@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
 
       - name: Validate Commit Subjects
-        uses: ./.github/actions/validate-conventional-commits
+        uses: marvinkassabian/latex-document-ops/.github/actions/validate-conventional-commits@main
         with:
           event_name: ${{ github.event_name }}
           before_sha: ${{ github.event.before }}

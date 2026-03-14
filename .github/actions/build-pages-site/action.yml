@@ -1,0 +1,24 @@
+name: Build Pages Site
+description: Build a static Pages site from generated PDF artifacts
+inputs:
+  artifact_path:
+    description: Path containing built PDF artifacts
+    required: true
+  page_title:
+    description: Title text for the Pages index
+    required: false
+    default: "LaTeX Build Artifacts"
+  page_description:
+    description: Description text shown under the title
+    required: false
+    default: "Generated from the latest build."
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        ARTIFACT_PATH: ${{ inputs.artifact_path }}
+        PAGE_TITLE: ${{ inputs.page_title }}
+        PAGE_DESCRIPTION: ${{ inputs.page_description }}
+      run: |
+        python3 "$GITHUB_ACTION_PATH/build_pages_site.py"
