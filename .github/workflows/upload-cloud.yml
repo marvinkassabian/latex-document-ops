@@ -104,8 +104,8 @@ jobs:
               exit 1
             fi
           elif [ "$PROVIDER" = "proton" ]; then
-            if [ -z "$PROTON_USERNAME" ] || [ -z "$PROTON_PASSWORD" ] || [ -z "$PROTON_MAILBOX_PASSWORD" ]; then
-              echo "Missing Proton credentials. Configure repository secrets PROTON_USERNAME, PROTON_PASSWORD, and PROTON_MAILBOX_PASSWORD in the source repository."
+            if [ -z "$PROTON_USERNAME" ] || [ -z "$PROTON_PASSWORD" ]; then
+              echo "Missing Proton credentials. Configure repository secrets PROTON_USERNAME and PROTON_PASSWORD in the source repository."
               exit 1
             fi
           fi
