@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-14
+
+### Added
+- Dedicated reusable workflows for GitHub Pages publishing and Mega.io uploads
+- GitHub release note category configuration in `.github/release.yml`
+
+### Changed
+- Cloud upload automation was split into provider-specific workflows, including a renamed Proton workflow file
+- The reusable release workflow now focuses on build-and-release responsibilities while provider uploads run in separate reusable workflows
+- Removed the embedded repository hook scripts from `.github/.githooks`
+
+
 ## [0.1.0] - 2026-03-14
 
 ### Added
