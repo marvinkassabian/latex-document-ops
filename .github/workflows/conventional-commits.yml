@@ -1,0 +1,37 @@
+name: Reusable Conventional Commits
+
+on:
+  workflow_call:
+    inputs:
+      source_repository:
+        description: Source repository to checkout and validate
+        required: true
+        type: string
+      source_ref:
+        description: Ref or SHA to checkout from the source repository
+        required: true
+        type: string
+
+jobs:
+  check-conventional-commits:
+    name: Check Commit Messages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Source Repository History
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.source_repository }}
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+
+      - name: Validate Commit Subjects
+        uses: ./.github/actions/validate-conventional-commits
+        with:
+          event_name: ${{ github.event_name }}
+          before_sha: ${{ github.event.before }}
+          after_sha: ${{ github.sha }}
+          pr_base_sha: ${{ github.event.pull_request.base.sha || '' }}
+          pr_head_sha: ${{ github.event.pull_request.head.sha || '' }}

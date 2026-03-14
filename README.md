@@ -5,6 +5,7 @@ Reusable GitHub Actions workflows and composite actions for LaTeX document repos
 This repository is intended to hold shared automation for:
 
 - building LaTeX PDFs in GitHub Actions
+- validating Conventional Commit subjects in GitHub Actions
 - publishing GitHub Releases
 - downloading release PDF assets
 - uploading PDFs to Mega.io and Proton Drive
@@ -45,6 +46,15 @@ Inputs:
 - `enable_github_release`
 - `generate_release_notes`
 - `enable_version_validation`
+
+### `.github/workflows/conventional-commits.yml`
+
+Reusable Conventional Commits validation workflow for document repositories.
+
+Inputs:
+
+- `source_repository`
+- `source_ref`
 - `cloud_upload_source`
 - `enable_mega_upload`
 - `mega_target_path`
@@ -101,6 +111,7 @@ Behavior and requirements:
 ## Available Actions
 
 - `.github/actions/validate-release-version`
+- `.github/actions/validate-conventional-commits`
 - `.github/actions/download-release-pdfs`
 - `.github/actions/configure-rclone-mega`
 - `.github/actions/configure-rclone-proton`
@@ -109,6 +120,7 @@ Behavior and requirements:
 
 Action notes:
 
+- `validate-conventional-commits` checks push and pull request commit subjects, ignores merge commits, and emits GitHub error annotations for non-conforming subjects.
 - `configure-rclone-mega` validates that username/password are present, creates the `mega` remote via `rclone config create`, and verifies login before upload.
 - `upload-pdfs-mega` purges the release target path when present and performs a single filtered `rclone copy` for PDF artifacts.
 
