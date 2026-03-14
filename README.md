@@ -26,7 +26,23 @@ Inputs:
 - `artifact_name`
 - `strict_build`
 - `clean_command`
-- `enable_pages`
+- `artifact_retention_days`
+
+This workflow only builds PDFs and uploads the build artifact. It does not configure or deploy GitHub Pages.
+
+### `.github/workflows/publish-pages.yml`
+
+Reusable workflow for repositories that want an explicit GitHub Pages publish step.
+
+Inputs:
+
+- `source_repository`
+- `source_ref`
+- `build_command`
+- `artifact_path`
+- `artifact_name`
+- `strict_build`
+- `clean_command`
 - `page_title`
 - `page_description`
 - `artifact_retention_days`
@@ -131,6 +147,8 @@ Action notes:
 ## Caller Pattern
 
 Keep triggers, repository-variable evaluation, and opt-in feature flags in the document repository. Call these workflows with explicit inputs.
+
+If a repository wants GitHub Pages, add a separate job that calls `.github/workflows/publish-pages.yml`. Do not expect `.github/workflows/build.yml` to configure Pages implicitly.
 
 For cloud uploads, prefer environment-scoped credentials in the caller repository (`mega-io` and `proton-drive`) and use repository variables only to override environment names when necessary.
 

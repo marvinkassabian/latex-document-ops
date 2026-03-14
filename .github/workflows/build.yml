@@ -33,21 +33,6 @@ on:
         required: false
         default: ""
         type: string
-      enable_pages:
-        description: Whether to generate and deploy a GitHub Pages artifact
-        required: false
-        default: false
-        type: boolean
-      page_title:
-        description: Optional title for the generated Pages index
-        required: false
-        default: "LaTeX Build Artifacts"
-        type: string
-      page_description:
-        description: Optional description for the generated Pages index
-        required: false
-        default: "Generated from the latest build."
-        type: string
       artifact_retention_days:
         description: Retention period for the uploaded build artifact
         required: false
@@ -55,7 +40,7 @@ on:
         type: number
 
 concurrency:
-  group: latex-pages-${{ inputs.source_repository }}
+  group: latex-build-${{ inputs.source_repository }}
   cancel-in-progress: true
 
 jobs:
@@ -70,10 +55,6 @@ jobs:
         with:
           repository: ${{ inputs.source_repository }}
           ref: ${{ inputs.source_ref }}
-
-      - name: Set Up GitHub Pages
-        if: ${{ inputs.enable_pages }}
-        uses: actions/configure-pages@v5
 
       - name: Install TeX Tools
         run: |
@@ -95,29 +76,3 @@ jobs:
           name: ${{ inputs.artifact_name }}
           path: ${{ inputs.artifact_path }}
           retention-days: ${{ inputs.artifact_retention_days }}
-
-      - name: Build GitHub Pages Site
-        if: ${{ inputs.enable_pages }}
-        uses: marvinkassabian/latex-document-ops/.github/actions/build-pages-site@main
-        with:
-          artifact_path: ${{ inputs.artifact_path }}
-          page_title: ${{ inputs.page_title }}
-          page_description: ${{ inputs.page_description }}
-
-      - name: Upload GitHub Pages Artifact
-        if: ${{ inputs.enable_pages }}
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/
-
-  deploy-github-pages:
-    needs: build-latex
-    runs-on: ubuntu-latest
-    if: ${{ inputs.enable_pages }}
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

@@ -33,6 +33,16 @@ on:
         required: false
         default: ""
         type: string
+      page_title:
+        description: Optional title for the generated Pages index
+        required: false
+        default: "LaTeX Build Artifacts"
+        type: string
+      page_description:
+        description: Optional description for the generated Pages index
+        required: false
+        default: "Generated from the latest build."
+        type: string
       artifact_retention_days:
         description: Retention period for the uploaded build artifact
         required: false
@@ -81,46 +91,11 @@ jobs:
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Build GitHub Pages Site
-        run: |
-          set -euo pipefail
-          artifact_path="${{ inputs.artifact_path }}"
-          mkdir -p site
-          mapfile -t pdfs < <(find "$artifact_path" -type f -name '*.pdf' | sort)
-
-          {
-            echo '<!doctype html>'
-            echo '<html lang="en">'
-            echo '<head>'
-            echo '  <meta charset="utf-8">'
-            echo '  <meta name="viewport" content="width=device-width, initial-scale=1">'
-            echo '  <title>LaTeX Build Artifacts</title>'
-            echo '  <style>'
-            echo '    :root { color-scheme: light; }'
-            echo '    body { font-family: Georgia, "Times New Roman", serif; margin: 2rem auto; max-width: 52rem; padding: 0 1rem; line-height: 1.5; color: #1f2933; background: linear-gradient(180deg, #f7f4ef 0%, #ffffff 100%); }'
-            echo '    h1 { margin-bottom: 0.25rem; }'
-            echo '    p { color: #52606d; }'
-            echo '    ul { padding-left: 1.25rem; }'
-            echo '    li + li { margin-top: 0.4rem; }'
-            echo '    a { color: #8d3b12; text-decoration: none; }'
-            echo '    a:hover { text-decoration: underline; }'
-            echo '    code { background: #f0e7dd; padding: 0.1rem 0.3rem; }'
-            echo '  </style>'
-            echo '</head>'
-            echo '<body>'
-            echo '  <h1>LaTeX Build Artifacts</h1>'
-            echo "  <p>Source repository: <code>${{ inputs.source_repository }}</code></p>"
-            echo '  <ul>'
-            for pdf in "${pdfs[@]}"; do
-              rel="${pdf#${artifact_path%/}/}"
-              printf '    <li><a href="%s">%s</a></li>\n' "$pdf" "$rel"
-            done
-            echo '  </ul>'
-            echo '</body>'
-            echo '</html>'
-          } > site/index.html
-
-          mkdir -p site/build
-          cp -R "$artifact_path"/. site/build/
+        uses: marvinkassabian/latex-document-ops/.github/actions/build-pages-site@main
+        with:
+          artifact_path: ${{ inputs.artifact_path }}
+          page_title: ${{ inputs.page_title }}
+          page_description: ${{ inputs.page_description }}
 
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
