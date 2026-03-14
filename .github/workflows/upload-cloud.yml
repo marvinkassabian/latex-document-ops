@@ -90,25 +90,10 @@ jobs:
 
       - name: Validate Cloud Credentials
         if: ${{ inputs.provider == 'mega-io' || inputs.provider == 'proton-drive' }}
-        env:
-          PROVIDER: ${{ inputs.provider }}
-          MEGA_USERNAME: ${{ secrets.mega_io_username }}
-          MEGA_PASSWORD: ${{ secrets.mega_io_password }}
-          PROTON_USERNAME: ${{ secrets.proton_drive_username }}
-          PROTON_PASSWORD: ${{ secrets.proton_drive_password }}
-          PROTON_MAILBOX_PASSWORD: ${{ secrets.proton_drive_mailbox_password }}
-        run: |
-          if [ "$PROVIDER" = "mega-io" ]; then
-            if [ -z "$MEGA_USERNAME" ] || [ -z "$MEGA_PASSWORD" ]; then
-              echo "Missing Mega.io credentials. Configure repository secrets MEGA_IO_USERNAME and MEGA_IO_PASSWORD in the source repository."
-              exit 1
-            fi
-          elif [ "$PROVIDER" = "proton-drive" ]; then
-            if [ -z "$PROTON_USERNAME" ] || [ -z "$PROTON_PASSWORD" ]; then
-              echo "Missing Proton Drive credentials. Configure repository secrets PROTON_DRIVE_USERNAME and PROTON_DRIVE_PASSWORD in the source repository."
-              exit 1
-            fi
-          fi
+        uses: marvinkassabian/latex-document-ops/.github/actions/validate-cloud-credentials@main
+        with:
+          provider: ${{ inputs.provider }}
+          secrets_json: ${{ toJSON(secrets) }}
 
       - name: Configure Rclone for Mega.io
         if: ${{ inputs.provider == 'mega-io' }}
