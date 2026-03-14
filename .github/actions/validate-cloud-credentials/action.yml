@@ -4,16 +4,36 @@ inputs:
   provider:
     description: Cloud provider name
     required: true
-  secrets_json:
-    description: JSON map of inherited secrets from workflow context
+  mega_io_username:
+    description: Mega.io username
     required: false
-    default: "{}"
+    default: ""
+  mega_io_password:
+    description: Mega.io password
+    required: false
+    default: ""
+  proton_drive_username:
+    description: Proton Drive username
+    required: false
+    default: ""
+  proton_drive_password:
+    description: Proton Drive password
+    required: false
+    default: ""
+  proton_drive_mailbox_password:
+    description: Proton Drive mailbox password
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
     - shell: bash
       env:
         PROVIDER: ${{ inputs.provider }}
-        SECRETS_JSON: ${{ inputs.secrets_json }}
+        MEGA_IO_USERNAME: ${{ inputs.mega_io_username }}
+        MEGA_IO_PASSWORD: ${{ inputs.mega_io_password }}
+        PROTON_DRIVE_USERNAME: ${{ inputs.proton_drive_username }}
+        PROTON_DRIVE_PASSWORD: ${{ inputs.proton_drive_password }}
+        PROTON_DRIVE_MAILBOX_PASSWORD: ${{ inputs.proton_drive_mailbox_password }}
       run: |
         python3 "$GITHUB_ACTION_PATH/validate_cloud_credentials.py"

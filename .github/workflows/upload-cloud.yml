@@ -44,15 +44,15 @@ on:
         default: src/frontmatter
         type: string
     secrets:
-      MEGA_IO_USERNAME:
+      mega_io_username:
         required: false
-      MEGA_IO_PASSWORD:
+      mega_io_password:
         required: false
-      PROTON_DRIVE_USERNAME:
+      proton_drive_username:
         required: false
-      PROTON_DRIVE_PASSWORD:
+      proton_drive_password:
         required: false
-      PROTON_DRIVE_MAILBOX_PASSWORD:
+      proton_drive_mailbox_password:
         required: false
 
 jobs:
@@ -89,7 +89,11 @@ jobs:
         uses: marvinkassabian/latex-document-ops/.github/actions/validate-cloud-credentials@main
         with:
           provider: ${{ inputs.provider }}
-          secrets_json: ${{ toJSON(secrets) }}
+          mega_io_username: ${{ secrets.mega_io_username }}
+          mega_io_password: ${{ secrets.mega_io_password }}
+          proton_drive_username: ${{ secrets.proton_drive_username }}
+          proton_drive_password: ${{ secrets.proton_drive_password }}
+          proton_drive_mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
 
       - name: Install Rclone
         run: |
@@ -99,16 +103,16 @@ jobs:
         if: ${{ inputs.provider == 'mega-io' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-mega@main
         with:
-          username: ${{ secrets.MEGA_IO_USERNAME }}
-          password: ${{ secrets.MEGA_IO_PASSWORD }}
+          username: ${{ secrets.mega_io_username }}
+          password: ${{ secrets.mega_io_password }}
 
       - name: Configure Rclone for Proton Drive
         if: ${{ inputs.provider == 'proton-drive' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-proton@main
         with:
-          username: ${{ secrets.PROTON_DRIVE_USERNAME }}
-          password: ${{ secrets.PROTON_DRIVE_PASSWORD }}
-          mailbox_password: ${{ secrets.PROTON_DRIVE_MAILBOX_PASSWORD }}
+          username: ${{ secrets.proton_drive_username }}
+          password: ${{ secrets.proton_drive_password }}
+          mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
 
       - name: Upload PDFs to Mega.io
         if: ${{ inputs.provider == 'mega-io' }}

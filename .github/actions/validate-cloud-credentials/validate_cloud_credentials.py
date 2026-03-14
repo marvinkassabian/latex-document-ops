@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import json
 import os
 import sys
 from dataclasses import dataclass
@@ -45,27 +44,15 @@ def get_secret(secret_map: Dict[str, str], key: str) -> str:
     return secret_map.get(key.lower(), "")
 
 
-def validate(provider: str, secrets_json: str) -> int:
+def validate(provider: str, secret_map: Dict[str, str]) -> int:
     print(f"Validating credentials for provider: {provider}")
 
-    try:
-        loaded = json.loads(secrets_json or "{}")
-    except json.JSONDecodeError as exc:
-        print(f"Unable to parse secrets_json: {exc}", file=sys.stderr)
-        return 1
-
-    if not isinstance(loaded, dict):
-        print("secrets_json must decode to an object/map", file=sys.stderr)
-        return 1
-
-    secret_map = normalize_secret_map({str(k): "" if v is None else str(v) for k, v in loaded.items()})
-    visible_keys = sorted(secret_map.keys())
-
-    print(f"Visible secrets in context: {len(visible_keys)}")
+    visible_keys = sorted(key for key, value in secret_map.items() if value)
+    print(f"Visible credential inputs in context: {len(visible_keys)}")
     if visible_keys:
-        print(f"Visible secret keys: {', '.join(visible_keys)}")
+        print(f"Visible credential keys: {', '.join(visible_keys)}")
     else:
-        print("Visible secret keys: (none)")
+        print("Visible credential keys: (none)")
 
     mega_user_shape = describe_secret("mega_io_username", get_secret(secret_map, "mega_io_username"))
     mega_pass_shape = describe_secret("mega_io_password", get_secret(secret_map, "mega_io_password"))
@@ -111,23 +98,22 @@ def validate(provider: str, secrets_json: str) -> int:
 
 def main() -> None:
     provider = os.environ.get("PROVIDER", "")
-    secrets_json = os.environ.get("SECRETS_JSON", "{}")
-
-    # Backward compatibility for local/manual invocation.
-    if len(sys.argv) == 3:
-        provider, secrets_json = sys.argv[1:]
-    elif len(sys.argv) not in (1,):
-        print(
-            "Usage: validate_cloud_credentials.py [<provider> <secrets_json>]",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
     if not provider:
         print("PROVIDER is required", file=sys.stderr)
         sys.exit(1)
 
-    exit_code = validate(provider, secrets_json)
+    secret_map = normalize_secret_map(
+        {
+            "mega_io_username": os.environ.get("MEGA_IO_USERNAME", ""),
+            "mega_io_password": os.environ.get("MEGA_IO_PASSWORD", ""),
+            "proton_drive_username": os.environ.get("PROTON_DRIVE_USERNAME", ""),
+            "proton_drive_password": os.environ.get("PROTON_DRIVE_PASSWORD", ""),
+            "proton_drive_mailbox_password": os.environ.get("PROTON_DRIVE_MAILBOX_PASSWORD", ""),
+        }
+    )
+
+    exit_code = validate(provider, secret_map)
     sys.exit(exit_code)
 
 
