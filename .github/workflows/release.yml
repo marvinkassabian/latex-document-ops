@@ -93,15 +93,15 @@ on:
         default: src/frontmatter
         type: string
     secrets:
-      mega_io_username:
+      MEGA_IO_USERNAME:
         required: false
-      mega_io_password:
+      MEGA_IO_PASSWORD:
         required: false
-      proton_drive_username:
+      PROTON_DRIVE_USERNAME:
         required: false
-      proton_drive_password:
+      PROTON_DRIVE_PASSWORD:
         required: false
-      proton_drive_mailbox_password:
+      PROTON_DRIVE_MAILBOX_PASSWORD:
         required: false
 
 jobs:
@@ -192,8 +192,8 @@ jobs:
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
-      mega_io_username: ${{ secrets.mega_io_username }}
-      mega_io_password: ${{ secrets.mega_io_password }}
+      MEGA_IO_USERNAME: ${{ secrets.MEGA_IO_USERNAME }}
+      MEGA_IO_PASSWORD: ${{ secrets.MEGA_IO_PASSWORD }}
 
   upload-mega-io-from-release:
     if: ${{ inputs.enable_mega_io_upload && inputs.cloud_upload_source == 'release' }}
@@ -209,8 +209,8 @@ jobs:
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
-      mega_io_username: ${{ secrets.mega_io_username }}
-      mega_io_password: ${{ secrets.mega_io_password }}
+      MEGA_IO_USERNAME: ${{ secrets.MEGA_IO_USERNAME }}
+      MEGA_IO_PASSWORD: ${{ secrets.MEGA_IO_PASSWORD }}
 
   upload-proton-drive-from-artifact:
     if: ${{ always() && inputs.enable_proton_drive_upload && inputs.cloud_upload_source == 'artifact' && needs.build-latex.result == 'success' && (!inputs.enable_github_release || needs.publish-github-release.result == 'success') }}
@@ -229,9 +229,9 @@ jobs:
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
-      proton_drive_username: ${{ secrets.proton_drive_username }}
-      proton_drive_password: ${{ secrets.proton_drive_password }}
-      proton_drive_mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
+      PROTON_DRIVE_USERNAME: ${{ secrets.PROTON_DRIVE_USERNAME }}
+      PROTON_DRIVE_PASSWORD: ${{ secrets.PROTON_DRIVE_PASSWORD }}
+      PROTON_DRIVE_MAILBOX_PASSWORD: ${{ secrets.PROTON_DRIVE_MAILBOX_PASSWORD }}
 
   upload-proton-drive-from-release:
     if: ${{ inputs.enable_proton_drive_upload && inputs.cloud_upload_source == 'release' }}
@@ -247,6 +247,6 @@ jobs:
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
-      proton_drive_username: ${{ secrets.proton_drive_username }}
-      proton_drive_password: ${{ secrets.proton_drive_password }}
-      proton_drive_mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
+      PROTON_DRIVE_USERNAME: ${{ secrets.PROTON_DRIVE_USERNAME }}
+      PROTON_DRIVE_PASSWORD: ${{ secrets.PROTON_DRIVE_PASSWORD }}
+      PROTON_DRIVE_MAILBOX_PASSWORD: ${{ secrets.PROTON_DRIVE_MAILBOX_PASSWORD }}
