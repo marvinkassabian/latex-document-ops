@@ -1,0 +1,23 @@
+name: Configure Rclone Proton
+description: Configure rclone for Proton Drive uploads
+inputs:
+  username:
+    description: Proton username
+    required: true
+  password:
+    description: Proton password
+    required: true
+  mailbox_password:
+    description: Optional Proton mailbox password for two-password accounts
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if [ -n "${{ inputs.mailbox_password }}" ]; then
+          python3 "$GITHUB_ACTION_PATH/configure_rclone_protondrive.py"             "${{ inputs.username }}"             "${{ inputs.password }}"             "${{ inputs.mailbox_password }}"
+        else
+          python3 "$GITHUB_ACTION_PATH/configure_rclone_protondrive.py"             "${{ inputs.username }}"             "${{ inputs.password }}"
+        fi

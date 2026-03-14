@@ -1,6 +1,6 @@
 # LaTeX Document Ops
 
-Reusable GitHub Actions workflows and helper scripts for LaTeX document repositories.
+Reusable GitHub Actions workflows and composite actions for LaTeX document repositories.
 
 This repository is intended to hold shared automation for:
 
@@ -58,6 +58,15 @@ Secrets:
 - `proton_username`
 - `proton_password`
 - `proton_mailbox_password`
+
+## Available Actions
+
+- `.github/actions/validate-release-version`
+- `.github/actions/download-release-pdfs`
+- `.github/actions/configure-rclone-mega`
+- `.github/actions/configure-rclone-proton`
+- `.github/actions/upload-pdfs-mega`
+- `.github/actions/upload-pdfs-proton`
 
 ## Caller Pattern
 

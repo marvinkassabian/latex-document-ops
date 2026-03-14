@@ -77,7 +77,7 @@ def upload_pdfs_to_protondrive(release_tag: str, proton_drive_path: str) -> None
 
 def main() -> None:
     if len(sys.argv) != 3:
-        print("Usage: upload-pdfs-to-protondrive.py <release_tag> <proton_drive_path>", file=sys.stderr)
+        print("Usage: upload_pdfs_to_protondrive.py <release_tag> <proton_drive_path>", file=sys.stderr)
         sys.exit(1)
 
     upload_pdfs_to_protondrive(sys.argv[1], sys.argv[2])

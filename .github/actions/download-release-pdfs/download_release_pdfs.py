@@ -72,7 +72,7 @@ def download_release_pdfs(
 def main() -> None:
     if len(sys.argv) < 2 or len(sys.argv) > 5:
         print(
-            "Usage: download-release-pdfs.py <release_tag> [repository] [sections_dir] [frontmatter_dir]",
+            "Usage: download_release_pdfs.py <release_tag> [repository] [sections_dir] [frontmatter_dir]",
             file=sys.stderr,
         )
         sys.exit(1)

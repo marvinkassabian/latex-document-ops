@@ -40,7 +40,7 @@ def validate_release_version(ref_name: str = "") -> None:
 
 def main() -> None:
     if len(sys.argv) > 2:
-        print("Usage: validate-release-version.py [vX.Y.Z]", file=sys.stderr)
+        print("Usage: validate_release_version.py [vX.Y.Z]", file=sys.stderr)
         sys.exit(1)
 
     ref_name = sys.argv[1] if len(sys.argv) > 1 else ""

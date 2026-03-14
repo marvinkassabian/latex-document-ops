@@ -1,0 +1,17 @@
+name: Validate Release Version
+description: Validate that a release tag matches the VERSION file in the checked out source repository
+inputs:
+  release_tag:
+    description: Release tag to validate against VERSION
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if [ -n "${{ inputs.release_tag }}" ]; then
+          python3 "$GITHUB_ACTION_PATH/validate_release_version.py" "${{ inputs.release_tag }}"
+        else
+          python3 "$GITHUB_ACTION_PATH/validate_release_version.py"
+        fi

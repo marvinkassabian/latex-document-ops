@@ -37,7 +37,7 @@ def configure_rclone_protondrive(username: str, password: str, mailbox_password:
 def main() -> None:
     if len(sys.argv) < 3 or len(sys.argv) > 4:
         print(
-            "Usage: configure-rclone-protondrive.py <proton_username> <proton_password> [proton_mailbox_password]",
+            "Usage: configure_rclone_protondrive.py <proton_username> <proton_password> [proton_mailbox_password]",
             file=sys.stderr,
         )
         sys.exit(1)

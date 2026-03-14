@@ -30,7 +30,7 @@ def configure_rclone_megaio(username: str, password: str) -> None:
 
 def main() -> None:
     if len(sys.argv) != 3:
-        print("Usage: configure-rclone-megaio.py <mega_io_username> <mega_io_password>", file=sys.stderr)
+        print("Usage: configure_rclone_megaio.py <mega_io_username> <mega_io_password>", file=sys.stderr)
         sys.exit(1)
 
     configure_rclone_megaio(sys.argv[1], sys.argv[2])

@@ -1,0 +1,25 @@
+name: Download Release PDFs
+description: Download PDF assets from a GitHub release and reconstruct the expected build layout
+inputs:
+  release_tag:
+    description: Release tag to download
+    required: true
+  repository:
+    description: Repository that owns the release
+    required: true
+  sections_dir:
+    description: Source sections directory used to classify PDFs
+    required: false
+    default: src/sections
+  frontmatter_dir:
+    description: Source frontmatter directory used to classify PDFs
+    required: false
+    default: src/frontmatter
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python3 "$GITHUB_ACTION_PATH/download_release_pdfs.py"           "${{ inputs.release_tag }}"           "${{ inputs.repository }}"           "${{ inputs.sections_dir }}"           "${{ inputs.frontmatter_dir }}"

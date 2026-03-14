@@ -68,29 +68,6 @@ jobs:
           repository: ${{ inputs.source_repository }}
           ref: ${{ inputs.source_ref }}
 
-      - name: Resolve Ops Workflow Source
-        id: ops-source
-        env:
-          WORKFLOW_REF: ${{ github.workflow_ref }}
-        run: |
-          set -euo pipefail
-          repo="${WORKFLOW_REF%%/.github/workflows/*}"
-          ref_part="${WORKFLOW_REF##*@}"
-          case "$ref_part" in
-            refs/heads/*) ref="${ref_part#refs/heads/}" ;;
-            refs/tags/*) ref="${ref_part#refs/tags/}" ;;
-            *) ref="$ref_part" ;;
-          esac
-          echo "repo=$repo" >> "$GITHUB_OUTPUT"
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout Ops Repository
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ steps.ops-source.outputs.repo }}
-          ref: ${{ steps.ops-source.outputs.ref }}
-          path: .ops
-
       - name: Download PDF Artifacts
         if: ${{ inputs.source == 'artifact' }}
         uses: actions/download-artifact@v4
@@ -100,14 +77,12 @@ jobs:
 
       - name: Download Release PDF Assets
         if: ${{ inputs.source == 'release' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          python3 ./.ops/scripts/download-release-pdfs.py \
-            "${{ inputs.release_tag }}" \
-            "${{ inputs.source_repository }}" \
-            "${{ inputs.sections_dir }}" \
-            "${{ inputs.frontmatter_dir }}"
+        uses: marvinkassabian/latex-document-ops/.github/actions/download-release-pdfs@main
+        with:
+          release_tag: ${{ inputs.release_tag }}
+          repository: ${{ inputs.source_repository }}
+          sections_dir: ${{ inputs.sections_dir }}
+          frontmatter_dir: ${{ inputs.frontmatter_dir }}
 
       - name: Install Rclone
         run: |
@@ -115,45 +90,32 @@ jobs:
 
       - name: Configure Rclone for Mega.io
         if: ${{ inputs.provider == 'mega' }}
-        env:
-          MEGA_IO_USERNAME: ${{ secrets.mega_io_username }}
-          MEGA_IO_PASSWORD: ${{ secrets.mega_io_password }}
-        run: |
-          python3 ./.ops/scripts/configure-rclone-megaio.py \
-            "${MEGA_IO_USERNAME}" \
-            "${MEGA_IO_PASSWORD}"
+        uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-mega@main
+        with:
+          username: ${{ secrets.mega_io_username }}
+          password: ${{ secrets.mega_io_password }}
 
       - name: Configure Rclone for Proton Drive
         if: ${{ inputs.provider == 'proton' }}
-        env:
-          PROTON_USERNAME: ${{ secrets.proton_username }}
-          PROTON_PASSWORD: ${{ secrets.proton_password }}
-          PROTON_MAILBOX_PASSWORD: ${{ secrets.proton_mailbox_password }}
-        run: |
-          if [ -n "${PROTON_MAILBOX_PASSWORD}" ]; then
-            python3 ./.ops/scripts/configure-rclone-protondrive.py \
-              "${PROTON_USERNAME}" \
-              "${PROTON_PASSWORD}" \
-              "${PROTON_MAILBOX_PASSWORD}"
-          else
-            python3 ./.ops/scripts/configure-rclone-protondrive.py \
-              "${PROTON_USERNAME}" \
-              "${PROTON_PASSWORD}"
-          fi
+        uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-proton@main
+        with:
+          username: ${{ secrets.proton_username }}
+          password: ${{ secrets.proton_password }}
+          mailbox_password: ${{ secrets.proton_mailbox_password }}
 
       - name: Upload PDFs to Mega.io
         if: ${{ inputs.provider == 'mega' }}
-        run: |
-          python3 ./.ops/scripts/upload-pdfs-to-megaio.py \
-            "${{ inputs.release_tag }}" \
-            "${{ inputs.target_path }}"
+        uses: marvinkassabian/latex-document-ops/.github/actions/upload-pdfs-mega@main
+        with:
+          release_tag: ${{ inputs.release_tag }}
+          target_path: ${{ inputs.target_path }}
 
       - name: Upload PDFs to Proton Drive
         if: ${{ inputs.provider == 'proton' }}
-        run: |
-          python3 ./.ops/scripts/upload-pdfs-to-protondrive.py \
-            "${{ inputs.release_tag }}" \
-            "${{ inputs.target_path }}"
+        uses: marvinkassabian/latex-document-ops/.github/actions/upload-pdfs-proton@main
+        with:
+          release_tag: ${{ inputs.release_tag }}
+          target_path: ${{ inputs.target_path }}
 
       - name: Generate Upload Summary
         env:

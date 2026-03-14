@@ -1,0 +1,15 @@
+name: Configure Rclone Mega
+description: Configure rclone for Mega.io uploads
+inputs:
+  username:
+    description: Mega.io username
+    required: true
+  password:
+    description: Mega.io password
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        python3 "$GITHUB_ACTION_PATH/configure_rclone_megaio.py"           "${{ inputs.username }}"           "${{ inputs.password }}"

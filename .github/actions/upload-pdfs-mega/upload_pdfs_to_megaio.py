@@ -34,7 +34,7 @@ def upload_pdfs_to_megaio(release_tag: str, mega_io_path: str) -> None:
 
 def main() -> None:
     if len(sys.argv) != 3:
-        print("Usage: upload-pdfs-to-megaio.py <release_tag> <mega_io_path>", file=sys.stderr)
+        print("Usage: upload_pdfs_to_megaio.py <release_tag> <mega_io_path>", file=sys.stderr)
         sys.exit(1)
 
     upload_pdfs_to_megaio(sys.argv[1], sys.argv[2])

@@ -1,0 +1,15 @@
+name: Upload PDFs Mega
+description: Upload generated PDFs from the build directory to Mega.io
+inputs:
+  release_tag:
+    description: Release tag used for the remote folder
+    required: true
+  target_path:
+    description: Base Mega.io target path
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        python3 "$GITHUB_ACTION_PATH/upload_pdfs_to_megaio.py"           "${{ inputs.release_tag }}"           "${{ inputs.target_path }}"

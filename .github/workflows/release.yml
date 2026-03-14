@@ -113,29 +113,6 @@ jobs:
           repository: ${{ inputs.source_repository }}
           ref: ${{ inputs.source_ref }}
 
-      - name: Resolve Ops Workflow Source
-        id: ops-source
-        env:
-          WORKFLOW_REF: ${{ github.workflow_ref }}
-        run: |
-          set -euo pipefail
-          repo="${WORKFLOW_REF%%/.github/workflows/*}"
-          ref_part="${WORKFLOW_REF##*@}"
-          case "$ref_part" in
-            refs/heads/*) ref="${ref_part#refs/heads/}" ;;
-            refs/tags/*) ref="${ref_part#refs/tags/}" ;;
-            *) ref="$ref_part" ;;
-          esac
-          echo "repo=$repo" >> "$GITHUB_OUTPUT"
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout Ops Repository
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ steps.ops-source.outputs.repo }}
-          ref: ${{ steps.ops-source.outputs.ref }}
-          path: .ops
-
       - name: Validate Release Tag Format
         run: |
           if ! printf '%s' "${{ inputs.release_tag }}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
@@ -145,7 +122,9 @@ jobs:
 
       - name: Validate Tag and VERSION File
         if: ${{ inputs.enable_version_validation }}
-        run: python3 ./.ops/scripts/validate-release-version.py "${{ inputs.release_tag }}"
+        uses: marvinkassabian/latex-document-ops/.github/actions/validate-release-version@main
+        with:
+          release_tag: ${{ inputs.release_tag }}
 
       - name: Install TeX Tools
         run: |

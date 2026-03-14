@@ -1,0 +1,15 @@
+name: Upload PDFs Proton
+description: Upload generated PDFs from the build directory to Proton Drive
+inputs:
+  release_tag:
+    description: Release tag used for the remote folder
+    required: true
+  target_path:
+    description: Base Proton Drive target path
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        python3 "$GITHUB_ACTION_PATH/upload_pdfs_to_protondrive.py"           "${{ inputs.release_tag }}"           "${{ inputs.target_path }}"
