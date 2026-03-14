@@ -2,34 +2,42 @@
 
 import subprocess
 import sys
-from pathlib import Path
-
-
-def upload_directory(local_dir: Path, remote_dir: str) -> None:
-    if not local_dir.exists():
-        return
-
-    subprocess.run(["rclone", "mkdir", remote_dir], check=True)
-    for pdf in sorted(local_dir.glob("*.pdf")):
-        subprocess.run(["rclone", "copyto", str(pdf), f"{remote_dir}/{pdf.name}"], check=True)
 
 
 def upload_pdfs_to_megaio(release_tag: str, mega_io_path: str) -> None:
     remote_release_path = f"mega:{mega_io_path}/{release_tag}"
 
-    result = subprocess.run(
-        ["rclone", "lsf", remote_release_path],
+    purge_result = subprocess.run(
+        ["rclone", "purge", remote_release_path],
         capture_output=True,
         text=True,
         check=False,
     )
-    if result.returncode == 0:
-        subprocess.run(["rclone", "purge", remote_release_path], check=True)
+    if purge_result.returncode != 0:
+        stderr = purge_result.stderr.strip().lower()
+        if "not found" not in stderr and "directory not found" not in stderr:
+            raise subprocess.CalledProcessError(
+                purge_result.returncode,
+                purge_result.args,
+                output=purge_result.stdout,
+                stderr=purge_result.stderr,
+            )
 
-    subprocess.run(["rclone", "mkdir", remote_release_path], check=True)
-    upload_directory(Path("build"), remote_release_path)
-    upload_directory(Path("build/sections"), f"{remote_release_path}/sections")
-    upload_directory(Path("build/frontmatter"), f"{remote_release_path}/frontmatter")
+    subprocess.run(
+        [
+            "rclone",
+            "copy",
+            "build",
+            remote_release_path,
+            "--include",
+            "**/*.pdf",
+            "--include",
+            "*.pdf",
+            "--exclude",
+            "**",
+        ],
+        check=True,
+    )
 
 
 def main() -> None:

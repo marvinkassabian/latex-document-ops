@@ -2,30 +2,75 @@
 
 import subprocess
 import sys
-from pathlib import Path
 
 
 def configure_rclone_megaio(username: str, password: str) -> None:
-    config_dir = Path.home() / ".config" / "rclone"
-    config_dir.mkdir(parents=True, exist_ok=True)
+    username = username.strip()
+    password = password.strip()
 
-    result = subprocess.run(
-        ["rclone", "obscure", password],
+    if not username:
+        print(
+            "Missing Mega.io username. Set the mega_io_username secret in the calling workflow.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if not password:
+        print(
+            "Missing Mega.io password. Set the mega_io_password secret in the calling workflow.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    subprocess.run(
+        [
+            "rclone",
+            "config",
+            "delete",
+            "mega",
+        ],
         capture_output=True,
         text=True,
         check=False,
     )
-    if result.returncode != 0:
-        print(f"Error obscuring password: {result.stderr}", file=sys.stderr)
+
+    create_result = subprocess.run(
+        [
+            "rclone",
+            "config",
+            "create",
+            "mega",
+            "mega",
+            f"user={username}",
+            f"pass={password}",
+            "--obscure",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if create_result.returncode != 0:
+        print(
+            f"Failed to create Mega.io rclone remote: {create_result.stderr.strip()}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
-    config_content = (
-        "[mega]\n"
-        "type = mega\n"
-        f"user = {username}\n"
-        f"pass = {result.stdout.strip()}\n"
+    validate_result = subprocess.run(
+        ["rclone", "lsd", "mega:"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
-    (config_dir / "rclone.conf").write_text(config_content)
+    if validate_result.returncode != 0:
+        stderr = validate_result.stderr.strip()
+        print(
+            "Mega.io login validation failed. Confirm the MEGA account has been initialized in the browser, "
+            "the username/password secrets are correct, the account does not require unsupported interactive 2FA, "
+            f"and the remote is not temporarily blocked. rclone output: {stderr}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def main() -> None:
