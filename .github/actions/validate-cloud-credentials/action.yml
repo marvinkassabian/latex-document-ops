@@ -12,7 +12,8 @@ runs:
   using: composite
   steps:
     - shell: bash
+      env:
+        PROVIDER: ${{ inputs.provider }}
+        SECRETS_JSON: ${{ inputs.secrets_json }}
       run: |
-        python3 "$GITHUB_ACTION_PATH/validate_cloud_credentials.py" \
-          "${{ inputs.provider }}" \
-          "${{ inputs.secrets_json }}"
+        python3 "$GITHUB_ACTION_PATH/validate_cloud_credentials.py"

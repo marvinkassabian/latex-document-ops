@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import os
 import sys
 from dataclasses import dataclass
 from typing import Dict
@@ -109,14 +110,23 @@ def validate(provider: str, secrets_json: str) -> int:
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    provider = os.environ.get("PROVIDER", "")
+    secrets_json = os.environ.get("SECRETS_JSON", "{}")
+
+    # Backward compatibility for local/manual invocation.
+    if len(sys.argv) == 3:
+        provider, secrets_json = sys.argv[1:]
+    elif len(sys.argv) not in (1,):
         print(
-            "Usage: validate_cloud_credentials.py <provider> <secrets_json>",
+            "Usage: validate_cloud_credentials.py [<provider> <secrets_json>]",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    provider, secrets_json = sys.argv[1:]
+    if not provider:
+        print("PROVIDER is required", file=sys.stderr)
+        sys.exit(1)
+
     exit_code = validate(provider, secrets_json)
     sys.exit(exit_code)
 
