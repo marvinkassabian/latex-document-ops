@@ -1,0 +1,39 @@
+changelog:
+  exclude:
+    labels:
+      - "skip-changelog"
+      - "dependencies"
+  categories:
+    - title: "Breaking Changes"
+      labels:
+        - "breaking"
+        - "major"
+    - title: "Features"
+      labels:
+        - "feat"
+        - "feature"
+        - "enhancement"
+    - title: "Fixes"
+      labels:
+        - "fix"
+        - "bug"
+        - "bugfix"
+    - title: "Documentation"
+      labels:
+        - "docs"
+        - "documentation"
+    - title: "Build and CI"
+      labels:
+        - "build"
+        - "ci"
+        - "infra"
+    - title: "Refactors and Maintenance"
+      labels:
+        - "refactor"
+        - "chore"
+        - "style"
+        - "perf"
+        - "test"
+    - title: "Other"
+      labels:
+        - "*"
