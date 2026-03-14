@@ -58,7 +58,6 @@ on:
 jobs:
   upload-cloud:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.provider == 'mega' && (vars.MEGA_IO_ENVIRONMENT != '' && vars.MEGA_IO_ENVIRONMENT || 'mega-io') || (vars.PROTON_DRIVE_ENVIRONMENT != '' && vars.PROTON_DRIVE_ENVIRONMENT || 'proton-drive') }}
     permissions:
       contents: read
 
@@ -101,12 +100,12 @@ jobs:
         run: |
           if [ "$PROVIDER" = "mega" ]; then
             if [ -z "$MEGA_USERNAME" ] || [ -z "$MEGA_PASSWORD" ]; then
-              echo "Missing Mega.io credentials. Set environment secrets MEGA_IO_USERNAME and MEGA_IO_PASSWORD (or pass workflow_call secrets mega_io_username and mega_io_password)."
+              echo "Missing Mega.io credentials. Configure repository secrets MEGA_IO_USERNAME and MEGA_IO_PASSWORD in the source repository."
               exit 1
             fi
           elif [ "$PROVIDER" = "proton" ]; then
             if [ -z "$PROTON_USERNAME" ] || [ -z "$PROTON_PASSWORD" ] || [ -z "$PROTON_MAILBOX_PASSWORD" ]; then
-              echo "Missing Proton credentials. Set environment secrets PROTON_USERNAME, PROTON_PASSWORD, and PROTON_MAILBOX_PASSWORD (or pass workflow_call secrets proton_username, proton_password, and proton_mailbox_password)."
+              echo "Missing Proton credentials. Configure repository secrets PROTON_USERNAME, PROTON_PASSWORD, and PROTON_MAILBOX_PASSWORD in the source repository."
               exit 1
             fi
           fi

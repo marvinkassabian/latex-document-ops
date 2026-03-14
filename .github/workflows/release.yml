@@ -57,6 +57,11 @@ on:
         required: false
         default: artifact
         type: string
+      enable_cloud_upload:
+        description: Whether any cloud upload target is enabled
+        required: false
+        default: false
+        type: boolean
       enable_mega_upload:
         description: Whether to upload PDFs to Mega.io
         required: false
@@ -101,7 +106,7 @@ on:
 
 jobs:
   build-latex:
-    if: ${{ inputs.enable_github_release || ((inputs.enable_mega_upload || inputs.enable_proton_upload) && inputs.cloud_upload_source == 'artifact') }}
+    if: ${{ inputs.enable_github_release || (inputs.enable_cloud_upload && inputs.cloud_upload_source == 'artifact') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
