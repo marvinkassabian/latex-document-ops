@@ -1,12 +1,8 @@
-name: Reusable Upload Cloud Artifacts
+name: Reusable Upload to Mega.io
 
 on:
   workflow_call:
     inputs:
-      provider:
-        description: Cloud provider name
-        required: true
-        type: string
       source_repository:
         description: Source repository containing the release and source tree
         required: true
@@ -30,7 +26,7 @@ on:
         default: latex-document-pdfs
         type: string
       target_path:
-        description: Base path on the remote cloud provider
+        description: Base path on Mega.io
         required: true
         type: string
       sections_dir:
@@ -45,18 +41,12 @@ on:
         type: string
     secrets:
       mega_io_username:
-        required: false
+        required: true
       mega_io_password:
-        required: false
-      proton_drive_username:
-        required: false
-      proton_drive_password:
-        required: false
-      proton_drive_mailbox_password:
-        required: false
+        required: true
 
 jobs:
-  upload-cloud:
+  upload-mega-io:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -85,63 +75,34 @@ jobs:
           frontmatter_dir: ${{ inputs.frontmatter_dir }}
 
       - name: Validate Cloud Credentials
-        if: ${{ inputs.provider == 'mega-io' || inputs.provider == 'proton-drive' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/validate-cloud-credentials@main
         with:
-          provider: ${{ inputs.provider }}
+          provider: mega-io
           mega_io_username: ${{ secrets.mega_io_username }}
           mega_io_password: ${{ secrets.mega_io_password }}
-          proton_drive_username: ${{ secrets.proton_drive_username }}
-          proton_drive_password: ${{ secrets.proton_drive_password }}
-          proton_drive_mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
 
       - name: Install Rclone
         run: |
           curl https://rclone.org/install.sh | sudo bash
 
       - name: Configure Rclone for Mega.io
-        if: ${{ inputs.provider == 'mega-io' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-mega@main
         with:
           username: ${{ secrets.mega_io_username }}
           password: ${{ secrets.mega_io_password }}
 
-      - name: Configure Rclone for Proton Drive
-        if: ${{ inputs.provider == 'proton-drive' }}
-        uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-proton@main
-        with:
-          username: ${{ secrets.proton_drive_username }}
-          password: ${{ secrets.proton_drive_password }}
-          mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
-
       - name: Upload PDFs to Mega.io
-        if: ${{ inputs.provider == 'mega-io' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/upload-pdfs-mega@main
-        with:
-          release_tag: ${{ inputs.release_tag }}
-          target_path: ${{ inputs.target_path }}
-
-      - name: Upload PDFs to Proton Drive
-        if: ${{ inputs.provider == 'proton-drive' }}
-        uses: marvinkassabian/latex-document-ops/.github/actions/upload-pdfs-proton@main
         with:
           release_tag: ${{ inputs.release_tag }}
           target_path: ${{ inputs.target_path }}
 
       - name: Generate Upload Summary
         env:
-          PROVIDER: ${{ inputs.provider }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           TARGET_PATH: ${{ inputs.target_path }}
         run: |
-          provider_title="$PROVIDER"
-          if [ "$provider_title" = "mega-io" ]; then
-            provider_title="Mega.io"
-          elif [ "$provider_title" = "proton-drive" ]; then
-            provider_title="Proton Drive"
-          fi
-
-          echo "### ${provider_title} Upload Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Mega.io Upload Complete" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Source: \`${{ inputs.source }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Release tag: \`${RELEASE_TAG}\`" >> "$GITHUB_STEP_SUMMARY"

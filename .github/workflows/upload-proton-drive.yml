@@ -1,0 +1,116 @@
+name: Reusable Upload to Proton Drive
+
+on:
+  workflow_call:
+    inputs:
+      source_repository:
+        description: Source repository containing the release and source tree
+        required: true
+        type: string
+      source_ref:
+        description: Source repository ref used to inspect source tree
+        required: true
+        type: string
+      release_tag:
+        description: Release tag to use for the remote upload folder
+        required: true
+        type: string
+      source:
+        description: Source of PDFs to upload, either artifact or release
+        required: false
+        default: artifact
+        type: string
+      artifact_name:
+        description: Artifact name when source is artifact
+        required: false
+        default: latex-document-pdfs
+        type: string
+      target_path:
+        description: Base path on Proton Drive
+        required: true
+        type: string
+      sections_dir:
+        description: Source directory used to classify section PDFs from releases
+        required: false
+        default: src/sections
+        type: string
+      frontmatter_dir:
+        description: Source directory used to classify frontmatter PDFs from releases
+        required: false
+        default: src/frontmatter
+        type: string
+    secrets:
+      proton_drive_username:
+        required: true
+      proton_drive_password:
+        required: true
+      proton_drive_mailbox_password:
+        required: true
+
+jobs:
+  upload-proton-drive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.source_repository }}
+          ref: ${{ inputs.source_ref }}
+
+      - name: Download PDF Artifacts
+        if: ${{ inputs.source == 'artifact' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: build
+
+      - name: Download Release PDF Assets
+        if: ${{ inputs.source == 'release' }}
+        uses: marvinkassabian/latex-document-ops/.github/actions/download-release-pdfs@main
+        with:
+          release_tag: ${{ inputs.release_tag }}
+          repository: ${{ inputs.source_repository }}
+          sections_dir: ${{ inputs.sections_dir }}
+          frontmatter_dir: ${{ inputs.frontmatter_dir }}
+
+      - name: Validate Cloud Credentials
+        uses: marvinkassabian/latex-document-ops/.github/actions/validate-cloud-credentials@main
+        with:
+          provider: proton-drive
+          proton_drive_username: ${{ secrets.proton_drive_username }}
+          proton_drive_password: ${{ secrets.proton_drive_password }}
+          proton_drive_mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
+
+      - name: Install Rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configure Rclone for Proton Drive
+        uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-proton@main
+        with:
+          username: ${{ secrets.proton_drive_username }}
+          password: ${{ secrets.proton_drive_password }}
+          mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
+
+      - name: Upload PDFs to Proton Drive
+        uses: marvinkassabian/latex-document-ops/.github/actions/upload-pdfs-proton@main
+        with:
+          release_tag: ${{ inputs.release_tag }}
+          target_path: ${{ inputs.target_path }}
+
+      - name: Generate Upload Summary
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          TARGET_PATH: ${{ inputs.target_path }}
+        run: |
+          echo "### Proton Drive Upload Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: \`${{ inputs.source }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Release tag: \`${RELEASE_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Uploaded to: \`${TARGET_PATH}/${RELEASE_TAG}/\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Files uploaded:**" >> "$GITHUB_STEP_SUMMARY"
+          find build -type f -name '*.pdf' | wc -l | xargs -I {} echo "- {} PDF files" >> "$GITHUB_STEP_SUMMARY"
