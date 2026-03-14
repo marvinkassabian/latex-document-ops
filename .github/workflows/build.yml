@@ -1,0 +1,148 @@
+name: Reusable Build LaTeX
+
+on:
+  workflow_call:
+    inputs:
+      source_repository:
+        description: Source repository to checkout and build
+        required: true
+        type: string
+      source_ref:
+        description: Ref or SHA to checkout from the source repository
+        required: true
+        type: string
+      build_command:
+        description: Command used to build the document set
+        required: true
+        type: string
+      artifact_path:
+        description: Path to upload as the PDF artifact
+        required: true
+        type: string
+      artifact_name:
+        description: Artifact name for generated PDFs
+        required: true
+        type: string
+      strict_build:
+        description: Whether STRICT_SECTIONS should be enabled during build
+        required: false
+        default: false
+        type: boolean
+      clean_command:
+        description: Optional cleanup command to run after building
+        required: false
+        default: ""
+        type: string
+      enable_pages:
+        description: Whether to generate and deploy a GitHub Pages artifact
+        required: false
+        default: false
+        type: boolean
+      artifact_retention_days:
+        description: Retention period for the uploaded build artifact
+        required: false
+        default: 30
+        type: number
+
+concurrency:
+  group: latex-pages-${{ inputs.source_repository }}
+  cancel-in-progress: true
+
+jobs:
+  build-latex:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.source_repository }}
+          ref: ${{ inputs.source_ref }}
+
+      - name: Set Up GitHub Pages
+        if: ${{ inputs.enable_pages }}
+        uses: actions/configure-pages@v5
+
+      - name: Install TeX Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y latexmk texlive-luatex texlive-latex-extra
+
+      - name: Build PDFs
+        env:
+          STRICT_SECTIONS: ${{ inputs.strict_build && 'true' || 'false' }}
+        run: ${{ inputs.build_command }}
+
+      - name: Clean Build Artifacts
+        if: ${{ inputs.clean_command != '' }}
+        run: ${{ inputs.clean_command }}
+
+      - name: Upload PDF Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.artifact_path }}
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Build GitHub Pages Site
+        if: ${{ inputs.enable_pages }}
+        run: |
+          set -euo pipefail
+          artifact_path="${{ inputs.artifact_path }}"
+          mkdir -p site
+          mapfile -t pdfs < <(find "$artifact_path" -type f -name '*.pdf' | sort)
+
+          {
+            echo '<!doctype html>'
+            echo '<html lang="en">'
+            echo '<head>'
+            echo '  <meta charset="utf-8">'
+            echo '  <meta name="viewport" content="width=device-width, initial-scale=1">'
+            echo '  <title>LaTeX Build Artifacts</title>'
+            echo '  <style>'
+            echo '    :root { color-scheme: light; }'
+            echo '    body { font-family: Georgia, "Times New Roman", serif; margin: 2rem auto; max-width: 52rem; padding: 0 1rem; line-height: 1.5; color: #1f2933; background: linear-gradient(180deg, #f7f4ef 0%, #ffffff 100%); }'
+            echo '    h1 { margin-bottom: 0.25rem; }'
+            echo '    p { color: #52606d; }'
+            echo '    ul { padding-left: 1.25rem; }'
+            echo '    li + li { margin-top: 0.4rem; }'
+            echo '    a { color: #8d3b12; text-decoration: none; }'
+            echo '    a:hover { text-decoration: underline; }'
+            echo '    code { background: #f0e7dd; padding: 0.1rem 0.3rem; }'
+            echo '  </style>'
+            echo '</head>'
+            echo '<body>'
+            echo '  <h1>LaTeX Build Artifacts</h1>'
+            echo "  <p>Source repository: <code>${{ inputs.source_repository }}</code></p>"
+            echo '  <ul>'
+            for pdf in "${pdfs[@]}"; do
+              rel="${pdf#${artifact_path%/}/}"
+              printf '    <li><a href="%s">%s</a></li>\n' "$pdf" "$rel"
+            done
+            echo '  </ul>'
+            echo '</body>'
+            echo '</html>'
+          } > site/index.html
+
+          mkdir -p site/build
+          cp -R "$artifact_path"/. site/build/
+
+      - name: Upload GitHub Pages Artifact
+        if: ${{ inputs.enable_pages }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy-github-pages:
+    needs: build-latex
+    runs-on: ubuntu-latest
+    if: ${{ inputs.enable_pages }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

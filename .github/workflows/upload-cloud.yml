@@ -1,0 +1,178 @@
+name: Reusable Upload Cloud Artifacts
+
+on:
+  workflow_call:
+    inputs:
+      provider:
+        description: Cloud provider name
+        required: true
+        type: string
+      source_repository:
+        description: Source repository containing the release and source tree
+        required: true
+        type: string
+      source_ref:
+        description: Source repository ref used to inspect source tree
+        required: true
+        type: string
+      release_tag:
+        description: Release tag to use for the remote upload folder
+        required: true
+        type: string
+      source:
+        description: Source of PDFs to upload, either artifact or release
+        required: false
+        default: artifact
+        type: string
+      artifact_name:
+        description: Artifact name when source is artifact
+        required: false
+        default: latex-document-pdfs
+        type: string
+      target_path:
+        description: Base path on the remote cloud provider
+        required: true
+        type: string
+      sections_dir:
+        description: Source directory used to classify section PDFs from releases
+        required: false
+        default: src/sections
+        type: string
+      frontmatter_dir:
+        description: Source directory used to classify frontmatter PDFs from releases
+        required: false
+        default: src/frontmatter
+        type: string
+    secrets:
+      mega_io_username:
+        required: false
+      mega_io_password:
+        required: false
+      proton_username:
+        required: false
+      proton_password:
+        required: false
+      proton_mailbox_password:
+        required: false
+
+jobs:
+  upload-cloud:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.source_repository }}
+          ref: ${{ inputs.source_ref }}
+
+      - name: Resolve Ops Workflow Source
+        id: ops-source
+        env:
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -euo pipefail
+          repo="${WORKFLOW_REF%%/.github/workflows/*}"
+          ref_part="${WORKFLOW_REF##*@}"
+          case "$ref_part" in
+            refs/heads/*) ref="${ref_part#refs/heads/}" ;;
+            refs/tags/*) ref="${ref_part#refs/tags/}" ;;
+            *) ref="$ref_part" ;;
+          esac
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Ops Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.ops-source.outputs.repo }}
+          ref: ${{ steps.ops-source.outputs.ref }}
+          path: .ops
+
+      - name: Download PDF Artifacts
+        if: ${{ inputs.source == 'artifact' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: build
+
+      - name: Download Release PDF Assets
+        if: ${{ inputs.source == 'release' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 ./.ops/scripts/download-release-pdfs.py \
+            "${{ inputs.release_tag }}" \
+            "${{ inputs.source_repository }}" \
+            "${{ inputs.sections_dir }}" \
+            "${{ inputs.frontmatter_dir }}"
+
+      - name: Install Rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configure Rclone for Mega.io
+        if: ${{ inputs.provider == 'mega' }}
+        env:
+          MEGA_IO_USERNAME: ${{ secrets.mega_io_username }}
+          MEGA_IO_PASSWORD: ${{ secrets.mega_io_password }}
+        run: |
+          python3 ./.ops/scripts/configure-rclone-megaio.py \
+            "${MEGA_IO_USERNAME}" \
+            "${MEGA_IO_PASSWORD}"
+
+      - name: Configure Rclone for Proton Drive
+        if: ${{ inputs.provider == 'proton' }}
+        env:
+          PROTON_USERNAME: ${{ secrets.proton_username }}
+          PROTON_PASSWORD: ${{ secrets.proton_password }}
+          PROTON_MAILBOX_PASSWORD: ${{ secrets.proton_mailbox_password }}
+        run: |
+          if [ -n "${PROTON_MAILBOX_PASSWORD}" ]; then
+            python3 ./.ops/scripts/configure-rclone-protondrive.py \
+              "${PROTON_USERNAME}" \
+              "${PROTON_PASSWORD}" \
+              "${PROTON_MAILBOX_PASSWORD}"
+          else
+            python3 ./.ops/scripts/configure-rclone-protondrive.py \
+              "${PROTON_USERNAME}" \
+              "${PROTON_PASSWORD}"
+          fi
+
+      - name: Upload PDFs to Mega.io
+        if: ${{ inputs.provider == 'mega' }}
+        run: |
+          python3 ./.ops/scripts/upload-pdfs-to-megaio.py \
+            "${{ inputs.release_tag }}" \
+            "${{ inputs.target_path }}"
+
+      - name: Upload PDFs to Proton Drive
+        if: ${{ inputs.provider == 'proton' }}
+        run: |
+          python3 ./.ops/scripts/upload-pdfs-to-protondrive.py \
+            "${{ inputs.release_tag }}" \
+            "${{ inputs.target_path }}"
+
+      - name: Generate Upload Summary
+        env:
+          PROVIDER: ${{ inputs.provider }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          TARGET_PATH: ${{ inputs.target_path }}
+        run: |
+          provider_title="$PROVIDER"
+          if [ "$provider_title" = "mega" ]; then
+            provider_title="Mega.io"
+          elif [ "$provider_title" = "proton" ]; then
+            provider_title="Proton Drive"
+          fi
+
+          echo "### ${provider_title} Upload Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: \`${{ inputs.source }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Release tag: \`${RELEASE_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Uploaded to: \`${TARGET_PATH}/${RELEASE_TAG}/\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Files uploaded:**" >> "$GITHUB_STEP_SUMMARY"
+          find build -type f -name '*.pdf' | wc -l | xargs -I {} echo "- {} PDF files" >> "$GITHUB_STEP_SUMMARY"

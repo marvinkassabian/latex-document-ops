@@ -1,0 +1,268 @@
+name: Reusable Release LaTeX
+
+on:
+  workflow_call:
+    inputs:
+      source_repository:
+        description: Source repository to checkout and release
+        required: true
+        type: string
+      source_ref:
+        description: Source repository ref or SHA to checkout
+        required: true
+        type: string
+      release_tag:
+        description: Release tag name
+        required: true
+        type: string
+      build_command:
+        description: Command used to build the document set
+        required: true
+        type: string
+      artifact_path:
+        description: Path to upload as the PDF artifact
+        required: true
+        type: string
+      artifact_name:
+        description: Artifact name for generated PDFs
+        required: true
+        type: string
+      strict_build:
+        description: Whether STRICT_SECTIONS should be enabled during build
+        required: false
+        default: true
+        type: boolean
+      clean_command:
+        description: Optional cleanup command to run after building
+        required: false
+        default: ""
+        type: string
+      enable_github_release:
+        description: Whether to create or update a GitHub Release
+        required: false
+        default: true
+        type: boolean
+      generate_release_notes:
+        description: Whether GitHub should generate release notes
+        required: false
+        default: true
+        type: boolean
+      enable_version_validation:
+        description: Whether to validate release_tag against VERSION
+        required: false
+        default: true
+        type: boolean
+      cloud_upload_source:
+        description: Source used for cloud uploads, either artifact or release
+        required: false
+        default: artifact
+        type: string
+      enable_mega_upload:
+        description: Whether to upload PDFs to Mega.io
+        required: false
+        default: false
+        type: boolean
+      mega_target_path:
+        description: Target base path for Mega.io uploads
+        required: false
+        default: LaTeX-Documents
+        type: string
+      enable_proton_upload:
+        description: Whether to upload PDFs to Proton Drive
+        required: false
+        default: false
+        type: boolean
+      proton_target_path:
+        description: Target base path for Proton Drive uploads
+        required: false
+        default: LaTeX-Documents
+        type: string
+      sections_dir:
+        description: Source directory used to classify section PDFs from releases
+        required: false
+        default: src/sections
+        type: string
+      frontmatter_dir:
+        description: Source directory used to classify frontmatter PDFs from releases
+        required: false
+        default: src/frontmatter
+        type: string
+    secrets:
+      mega_io_username:
+        required: false
+      mega_io_password:
+        required: false
+      proton_username:
+        required: false
+      proton_password:
+        required: false
+      proton_mailbox_password:
+        required: false
+
+jobs:
+  build-latex:
+    if: ${{ inputs.enable_github_release || ((inputs.enable_mega_upload || inputs.enable_proton_upload) && inputs.cloud_upload_source == 'artifact') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.source_repository }}
+          ref: ${{ inputs.source_ref }}
+
+      - name: Resolve Ops Workflow Source
+        id: ops-source
+        env:
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -euo pipefail
+          repo="${WORKFLOW_REF%%/.github/workflows/*}"
+          ref_part="${WORKFLOW_REF##*@}"
+          case "$ref_part" in
+            refs/heads/*) ref="${ref_part#refs/heads/}" ;;
+            refs/tags/*) ref="${ref_part#refs/tags/}" ;;
+            *) ref="$ref_part" ;;
+          esac
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Ops Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.ops-source.outputs.repo }}
+          ref: ${{ steps.ops-source.outputs.ref }}
+          path: .ops
+
+      - name: Validate Release Tag Format
+        run: |
+          if ! printf '%s' "${{ inputs.release_tag }}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "release_tag must use SemVer tag format (for example v1.2.3)"
+            exit 1
+          fi
+
+      - name: Validate Tag and VERSION File
+        if: ${{ inputs.enable_version_validation }}
+        run: python3 ./.ops/scripts/validate-release-version.py "${{ inputs.release_tag }}"
+
+      - name: Install TeX Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y latexmk texlive-luatex texlive-latex-extra
+
+      - name: Build PDFs
+        env:
+          STRICT_SECTIONS: ${{ inputs.strict_build && 'true' || 'false' }}
+        run: ${{ inputs.build_command }}
+
+      - name: Clean Build Artifacts
+        if: ${{ inputs.clean_command != '' }}
+        run: ${{ inputs.clean_command }}
+
+      - name: Upload PDF Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.artifact_path }}
+          retention-days: 30
+
+  publish-github-release:
+    if: ${{ inputs.enable_github_release }}
+    needs: build-latex
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download PDF Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: build
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ inputs.source_repository }}
+          tag_name: ${{ inputs.release_tag }}
+          files: |
+            build/**/*.pdf
+          generate_release_notes: ${{ inputs.generate_release_notes }}
+
+  upload-mega-from-artifact:
+    if: ${{ always() && inputs.enable_mega_upload && inputs.cloud_upload_source == 'artifact' && needs.build-latex.result == 'success' && (!inputs.enable_github_release || needs.publish-github-release.result == 'success') }}
+    needs:
+      - build-latex
+      - publish-github-release
+    uses: ./.github/workflows/upload-cloud.yml
+    with:
+      provider: mega
+      source_repository: ${{ inputs.source_repository }}
+      source_ref: ${{ inputs.source_ref }}
+      release_tag: ${{ inputs.release_tag }}
+      source: artifact
+      artifact_name: ${{ inputs.artifact_name }}
+      target_path: ${{ inputs.mega_target_path }}
+      sections_dir: ${{ inputs.sections_dir }}
+      frontmatter_dir: ${{ inputs.frontmatter_dir }}
+    secrets:
+      mega_io_username: ${{ secrets.mega_io_username }}
+      mega_io_password: ${{ secrets.mega_io_password }}
+
+  upload-mega-from-release:
+    if: ${{ inputs.enable_mega_upload && inputs.cloud_upload_source == 'release' }}
+    uses: ./.github/workflows/upload-cloud.yml
+    with:
+      provider: mega
+      source_repository: ${{ inputs.source_repository }}
+      source_ref: ${{ inputs.source_ref }}
+      release_tag: ${{ inputs.release_tag }}
+      source: release
+      artifact_name: ${{ inputs.artifact_name }}
+      target_path: ${{ inputs.mega_target_path }}
+      sections_dir: ${{ inputs.sections_dir }}
+      frontmatter_dir: ${{ inputs.frontmatter_dir }}
+    secrets:
+      mega_io_username: ${{ secrets.mega_io_username }}
+      mega_io_password: ${{ secrets.mega_io_password }}
+
+  upload-proton-from-artifact:
+    if: ${{ always() && inputs.enable_proton_upload && inputs.cloud_upload_source == 'artifact' && needs.build-latex.result == 'success' && (!inputs.enable_github_release || needs.publish-github-release.result == 'success') }}
+    needs:
+      - build-latex
+      - publish-github-release
+    uses: ./.github/workflows/upload-cloud.yml
+    with:
+      provider: proton
+      source_repository: ${{ inputs.source_repository }}
+      source_ref: ${{ inputs.source_ref }}
+      release_tag: ${{ inputs.release_tag }}
+      source: artifact
+      artifact_name: ${{ inputs.artifact_name }}
+      target_path: ${{ inputs.proton_target_path }}
+      sections_dir: ${{ inputs.sections_dir }}
+      frontmatter_dir: ${{ inputs.frontmatter_dir }}
+    secrets:
+      proton_username: ${{ secrets.proton_username }}
+      proton_password: ${{ secrets.proton_password }}
+      proton_mailbox_password: ${{ secrets.proton_mailbox_password }}
+
+  upload-proton-from-release:
+    if: ${{ inputs.enable_proton_upload && inputs.cloud_upload_source == 'release' }}
+    uses: ./.github/workflows/upload-cloud.yml
+    with:
+      provider: proton
+      source_repository: ${{ inputs.source_repository }}
+      source_ref: ${{ inputs.source_ref }}
+      release_tag: ${{ inputs.release_tag }}
+      source: release
+      artifact_name: ${{ inputs.artifact_name }}
+      target_path: ${{ inputs.proton_target_path }}
+      sections_dir: ${{ inputs.sections_dir }}
+      frontmatter_dir: ${{ inputs.frontmatter_dir }}
+    secrets:
+      proton_username: ${{ secrets.proton_username }}
+      proton_password: ${{ secrets.proton_password }}
+      proton_mailbox_password: ${{ secrets.proton_mailbox_password }}
