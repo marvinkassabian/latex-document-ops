@@ -58,6 +58,7 @@ on:
 jobs:
   upload-cloud:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.provider == 'mega' && (vars.MEGA_IO_ENVIRONMENT != '' && vars.MEGA_IO_ENVIRONMENT || 'mega-io') || (vars.PROTON_DRIVE_ENVIRONMENT != '' && vars.PROTON_DRIVE_ENVIRONMENT || 'proton-drive') }}
     permissions:
       contents: read
 
@@ -88,20 +89,42 @@ jobs:
         run: |
           curl https://rclone.org/install.sh | sudo bash
 
+      - name: Validate Cloud Credentials
+        if: ${{ inputs.provider == 'mega' || inputs.provider == 'proton' }}
+        env:
+          PROVIDER: ${{ inputs.provider }}
+          MEGA_USERNAME: ${{ secrets.MEGA_IO_USERNAME || secrets.mega_io_username }}
+          MEGA_PASSWORD: ${{ secrets.MEGA_IO_PASSWORD || secrets.mega_io_password }}
+          PROTON_USERNAME: ${{ secrets.PROTON_USERNAME || secrets.proton_username }}
+          PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD || secrets.proton_password }}
+          PROTON_MAILBOX_PASSWORD: ${{ secrets.PROTON_MAILBOX_PASSWORD || secrets.proton_mailbox_password }}
+        run: |
+          if [ "$PROVIDER" = "mega" ]; then
+            if [ -z "$MEGA_USERNAME" ] || [ -z "$MEGA_PASSWORD" ]; then
+              echo "Missing Mega.io credentials. Set environment secrets MEGA_IO_USERNAME and MEGA_IO_PASSWORD (or pass workflow_call secrets mega_io_username and mega_io_password)."
+              exit 1
+            fi
+          elif [ "$PROVIDER" = "proton" ]; then
+            if [ -z "$PROTON_USERNAME" ] || [ -z "$PROTON_PASSWORD" ] || [ -z "$PROTON_MAILBOX_PASSWORD" ]; then
+              echo "Missing Proton credentials. Set environment secrets PROTON_USERNAME, PROTON_PASSWORD, and PROTON_MAILBOX_PASSWORD (or pass workflow_call secrets proton_username, proton_password, and proton_mailbox_password)."
+              exit 1
+            fi
+          fi
+
       - name: Configure Rclone for Mega.io
         if: ${{ inputs.provider == 'mega' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-mega@main
         with:
-          username: ${{ secrets.mega_io_username }}
-          password: ${{ secrets.mega_io_password }}
+          username: ${{ secrets.MEGA_IO_USERNAME || secrets.mega_io_username }}
+          password: ${{ secrets.MEGA_IO_PASSWORD || secrets.mega_io_password }}
 
       - name: Configure Rclone for Proton Drive
         if: ${{ inputs.provider == 'proton' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-proton@main
         with:
-          username: ${{ secrets.proton_username }}
-          password: ${{ secrets.proton_password }}
-          mailbox_password: ${{ secrets.proton_mailbox_password }}
+          username: ${{ secrets.PROTON_USERNAME || secrets.proton_username }}
+          password: ${{ secrets.PROTON_PASSWORD || secrets.proton_password }}
+          mailbox_password: ${{ secrets.PROTON_MAILBOX_PASSWORD || secrets.proton_mailbox_password }}
 
       - name: Upload PDFs to Mega.io
         if: ${{ inputs.provider == 'mega' }}
