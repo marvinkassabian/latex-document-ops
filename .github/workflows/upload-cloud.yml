@@ -48,11 +48,11 @@ on:
         required: false
       mega_io_password:
         required: false
-      proton_username:
+      proton_drive_username:
         required: false
-      proton_password:
+      proton_drive_password:
         required: false
-      proton_mailbox_password:
+      proton_drive_mailbox_password:
         required: false
 
 jobs:
@@ -89,51 +89,51 @@ jobs:
           curl https://rclone.org/install.sh | sudo bash
 
       - name: Validate Cloud Credentials
-        if: ${{ inputs.provider == 'mega' || inputs.provider == 'proton' }}
+        if: ${{ inputs.provider == 'mega-io' || inputs.provider == 'proton-drive' }}
         env:
           PROVIDER: ${{ inputs.provider }}
-          MEGA_USERNAME: ${{ secrets.MEGA_IO_USERNAME || secrets.mega_io_username }}
-          MEGA_PASSWORD: ${{ secrets.MEGA_IO_PASSWORD || secrets.mega_io_password }}
-          PROTON_USERNAME: ${{ secrets.PROTON_USERNAME || secrets.proton_username }}
-          PROTON_PASSWORD: ${{ secrets.PROTON_PASSWORD || secrets.proton_password }}
-          PROTON_MAILBOX_PASSWORD: ${{ secrets.PROTON_MAILBOX_PASSWORD || secrets.proton_mailbox_password }}
+          MEGA_USERNAME: ${{ secrets.mega_io_username }}
+          MEGA_PASSWORD: ${{ secrets.mega_io_password }}
+          PROTON_USERNAME: ${{ secrets.proton_drive_username }}
+          PROTON_PASSWORD: ${{ secrets.proton_drive_password }}
+          PROTON_MAILBOX_PASSWORD: ${{ secrets.proton_drive_mailbox_password }}
         run: |
-          if [ "$PROVIDER" = "mega" ]; then
+          if [ "$PROVIDER" = "mega-io" ]; then
             if [ -z "$MEGA_USERNAME" ] || [ -z "$MEGA_PASSWORD" ]; then
               echo "Missing Mega.io credentials. Configure repository secrets MEGA_IO_USERNAME and MEGA_IO_PASSWORD in the source repository."
               exit 1
             fi
-          elif [ "$PROVIDER" = "proton" ]; then
+          elif [ "$PROVIDER" = "proton-drive" ]; then
             if [ -z "$PROTON_USERNAME" ] || [ -z "$PROTON_PASSWORD" ]; then
-              echo "Missing Proton credentials. Configure repository secrets PROTON_USERNAME and PROTON_PASSWORD in the source repository."
+              echo "Missing Proton Drive credentials. Configure repository secrets PROTON_DRIVE_USERNAME and PROTON_DRIVE_PASSWORD in the source repository."
               exit 1
             fi
           fi
 
       - name: Configure Rclone for Mega.io
-        if: ${{ inputs.provider == 'mega' }}
+        if: ${{ inputs.provider == 'mega-io' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-mega@main
         with:
-          username: ${{ secrets.MEGA_IO_USERNAME || secrets.mega_io_username }}
-          password: ${{ secrets.MEGA_IO_PASSWORD || secrets.mega_io_password }}
+          username: ${{ secrets.mega_io_username }}
+          password: ${{ secrets.mega_io_password }}
 
       - name: Configure Rclone for Proton Drive
-        if: ${{ inputs.provider == 'proton' }}
+        if: ${{ inputs.provider == 'proton-drive' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/configure-rclone-proton@main
         with:
-          username: ${{ secrets.PROTON_USERNAME || secrets.proton_username }}
-          password: ${{ secrets.PROTON_PASSWORD || secrets.proton_password }}
-          mailbox_password: ${{ secrets.PROTON_MAILBOX_PASSWORD || secrets.proton_mailbox_password }}
+          username: ${{ secrets.proton_drive_username }}
+          password: ${{ secrets.proton_drive_password }}
+          mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
 
       - name: Upload PDFs to Mega.io
-        if: ${{ inputs.provider == 'mega' }}
+        if: ${{ inputs.provider == 'mega-io' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/upload-pdfs-mega@main
         with:
           release_tag: ${{ inputs.release_tag }}
           target_path: ${{ inputs.target_path }}
 
       - name: Upload PDFs to Proton Drive
-        if: ${{ inputs.provider == 'proton' }}
+        if: ${{ inputs.provider == 'proton-drive' }}
         uses: marvinkassabian/latex-document-ops/.github/actions/upload-pdfs-proton@main
         with:
           release_tag: ${{ inputs.release_tag }}
@@ -146,9 +146,9 @@ jobs:
           TARGET_PATH: ${{ inputs.target_path }}
         run: |
           provider_title="$PROVIDER"
-          if [ "$provider_title" = "mega" ]; then
+          if [ "$provider_title" = "mega-io" ]; then
             provider_title="Mega.io"
-          elif [ "$provider_title" = "proton" ]; then
+          elif [ "$provider_title" = "proton-drive" ]; then
             provider_title="Proton Drive"
           fi
 

@@ -62,22 +62,22 @@ on:
         required: false
         default: false
         type: boolean
-      enable_mega_upload:
+      enable_mega_io_upload:
         description: Whether to upload PDFs to Mega.io
         required: false
         default: false
         type: boolean
-      mega_target_path:
+      mega_io_target_path:
         description: Target base path for Mega.io uploads
         required: false
         default: LaTeX-Documents
         type: string
-      enable_proton_upload:
+      enable_proton_drive_upload:
         description: Whether to upload PDFs to Proton Drive
         required: false
         default: false
         type: boolean
-      proton_target_path:
+      proton_drive_target_path:
         description: Target base path for Proton Drive uploads
         required: false
         default: LaTeX-Documents
@@ -97,11 +97,11 @@ on:
         required: false
       mega_io_password:
         required: false
-      proton_username:
+      proton_drive_username:
         required: false
-      proton_password:
+      proton_drive_password:
         required: false
-      proton_mailbox_password:
+      proton_drive_mailbox_password:
         required: false
 
 jobs:
@@ -175,78 +175,78 @@ jobs:
             build/**/*.pdf
           generate_release_notes: ${{ inputs.generate_release_notes }}
 
-  upload-mega-from-artifact:
-    if: ${{ always() && inputs.enable_mega_upload && inputs.cloud_upload_source == 'artifact' && needs.build-latex.result == 'success' && (!inputs.enable_github_release || needs.publish-github-release.result == 'success') }}
+  upload-mega-io-from-artifact:
+    if: ${{ always() && inputs.enable_mega_io_upload && inputs.cloud_upload_source == 'artifact' && needs.build-latex.result == 'success' && (!inputs.enable_github_release || needs.publish-github-release.result == 'success') }}
     needs:
       - build-latex
       - publish-github-release
     uses: ./.github/workflows/upload-cloud.yml
     with:
-      provider: mega
+      provider: mega-io
       source_repository: ${{ inputs.source_repository }}
       source_ref: ${{ inputs.source_ref }}
       release_tag: ${{ inputs.release_tag }}
       source: artifact
       artifact_name: ${{ inputs.artifact_name }}
-      target_path: ${{ inputs.mega_target_path }}
+      target_path: ${{ inputs.mega_io_target_path }}
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
       mega_io_username: ${{ secrets.mega_io_username }}
       mega_io_password: ${{ secrets.mega_io_password }}
 
-  upload-mega-from-release:
-    if: ${{ inputs.enable_mega_upload && inputs.cloud_upload_source == 'release' }}
+  upload-mega-io-from-release:
+    if: ${{ inputs.enable_mega_io_upload && inputs.cloud_upload_source == 'release' }}
     uses: ./.github/workflows/upload-cloud.yml
     with:
-      provider: mega
+      provider: mega-io
       source_repository: ${{ inputs.source_repository }}
       source_ref: ${{ inputs.source_ref }}
       release_tag: ${{ inputs.release_tag }}
       source: release
       artifact_name: ${{ inputs.artifact_name }}
-      target_path: ${{ inputs.mega_target_path }}
+      target_path: ${{ inputs.mega_io_target_path }}
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
       mega_io_username: ${{ secrets.mega_io_username }}
       mega_io_password: ${{ secrets.mega_io_password }}
 
-  upload-proton-from-artifact:
-    if: ${{ always() && inputs.enable_proton_upload && inputs.cloud_upload_source == 'artifact' && needs.build-latex.result == 'success' && (!inputs.enable_github_release || needs.publish-github-release.result == 'success') }}
+  upload-proton-drive-from-artifact:
+    if: ${{ always() && inputs.enable_proton_drive_upload && inputs.cloud_upload_source == 'artifact' && needs.build-latex.result == 'success' && (!inputs.enable_github_release || needs.publish-github-release.result == 'success') }}
     needs:
       - build-latex
       - publish-github-release
     uses: ./.github/workflows/upload-cloud.yml
     with:
-      provider: proton
+      provider: proton-drive
       source_repository: ${{ inputs.source_repository }}
       source_ref: ${{ inputs.source_ref }}
       release_tag: ${{ inputs.release_tag }}
       source: artifact
       artifact_name: ${{ inputs.artifact_name }}
-      target_path: ${{ inputs.proton_target_path }}
+      target_path: ${{ inputs.proton_drive_target_path }}
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
-      proton_username: ${{ secrets.proton_username }}
-      proton_password: ${{ secrets.proton_password }}
-      proton_mailbox_password: ${{ secrets.proton_mailbox_password }}
+      proton_drive_username: ${{ secrets.proton_drive_username }}
+      proton_drive_password: ${{ secrets.proton_drive_password }}
+      proton_drive_mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
 
-  upload-proton-from-release:
-    if: ${{ inputs.enable_proton_upload && inputs.cloud_upload_source == 'release' }}
+  upload-proton-drive-from-release:
+    if: ${{ inputs.enable_proton_drive_upload && inputs.cloud_upload_source == 'release' }}
     uses: ./.github/workflows/upload-cloud.yml
     with:
-      provider: proton
+      provider: proton-drive
       source_repository: ${{ inputs.source_repository }}
       source_ref: ${{ inputs.source_ref }}
       release_tag: ${{ inputs.release_tag }}
       source: release
       artifact_name: ${{ inputs.artifact_name }}
-      target_path: ${{ inputs.proton_target_path }}
+      target_path: ${{ inputs.proton_drive_target_path }}
       sections_dir: ${{ inputs.sections_dir }}
       frontmatter_dir: ${{ inputs.frontmatter_dir }}
     secrets:
-      proton_username: ${{ secrets.proton_username }}
-      proton_password: ${{ secrets.proton_password }}
-      proton_mailbox_password: ${{ secrets.proton_mailbox_password }}
+      proton_drive_username: ${{ secrets.proton_drive_username }}
+      proton_drive_password: ${{ secrets.proton_drive_password }}
+      proton_drive_mailbox_password: ${{ secrets.proton_drive_mailbox_password }}
