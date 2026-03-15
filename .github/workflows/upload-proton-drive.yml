@@ -47,6 +47,9 @@ on:
       proton_drive_mailbox_password:
         required: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   upload-proton-drive:
     runs-on: ubuntu-latest

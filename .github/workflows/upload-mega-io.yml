@@ -45,6 +45,9 @@ on:
       mega_io_password:
         required: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   upload-mega-io:
     runs-on: ubuntu-latest

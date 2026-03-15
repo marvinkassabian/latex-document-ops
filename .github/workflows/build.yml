@@ -39,6 +39,9 @@ on:
         default: 30
         type: number
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: latex-build-${{ inputs.source_repository }}
   cancel-in-progress: true
