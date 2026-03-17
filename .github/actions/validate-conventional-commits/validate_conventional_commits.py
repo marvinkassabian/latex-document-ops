@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 CONVENTIONAL_COMMIT_PATTERN = re.compile(
     r"^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)"
-    r"(\([a-z0-9._/-]+\))?(!)?: [a-z0-9].+"
+    r"(\([a-z0-9._,/-]+\))?(!)?: [a-z0-9].+"
 )
 
 
