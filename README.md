@@ -59,6 +59,7 @@ Inputs:
 - `build_command`
 - `artifact_path`
 - `artifact_name`
+- `artifact_retention_days`
 - `strict_build`
 - `clean_command`
 - `enable_github_release`

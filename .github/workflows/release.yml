@@ -27,6 +27,11 @@ on:
         description: Artifact name for generated PDFs
         required: true
         type: string
+      artifact_retention_days:
+        description: Retention period for the uploaded build artifact
+        required: false
+        default: 30
+        type: number
       strict_build:
         description: Whether STRICT_SECTIONS should be enabled during build
         required: false
@@ -102,7 +107,7 @@ jobs:
         with:
           name: ${{ inputs.artifact_name }}
           path: ${{ inputs.artifact_path }}
-          retention-days: 30
+          retention-days: ${{ inputs.artifact_retention_days }}
 
   publish-github-release:
     if: ${{ inputs.enable_github_release }}
